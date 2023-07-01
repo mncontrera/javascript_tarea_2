@@ -88,7 +88,7 @@ class Carrito {
             const producto = await findProductBySku(sku);
 
             // Creo un producto nuevo
-            const nuevoProducto = new ProductoEnCarrito(sku, producto.nombre, cantidad);
+            const nuevoProducto = new ProductoEnCarrito(sku, producto.nombre, cantidad, producto.categoria);
 
             let res = ""
             let indice = 0;
@@ -103,12 +103,57 @@ class Carrito {
                 this.productos[indice].cantidad += cantidad
                 this.precioTotal = this.precioTotal + (producto.precio * cantidad);
             }
-            console.log(carrito)
+            //console.log(carrito)
         } catch (error) {
                 
             //producto.catch(err => console.log(err))
             console.log(error)
         }
+    }
+
+    eliminarProducto(sku, cantidadParaEliminar){
+        return new Promise((resolve, reject) => {
+            (async () => {
+                //setTimeout(() => {
+                    const productBySku = await findProductBySku(sku);
+                    
+                    const producto1 = this.productos.find(product => product.sku === sku);
+    
+                    if(producto1){
+                        if(producto1.cantidad > cantidadParaEliminar){
+                            producto1.cantidad -= cantidadParaEliminar
+                            this.precioTotal = this.precioTotal - (cantidadParaEliminar * productBySku.precio)
+                            resolve("eliminados algunos " + sku)
+                            console.log(carrito)
+                        }else{
+                            //console.log(carrito.productos)
+                            //console.log(this.productos)
+                            console.log("eliminando producto del carrito")
+                            let index = this.productos.findIndex(elem => elem.sku === sku)
+                            this.productos.splice(index, 1);
+                            this.precioTotal = this.precioTotal - (producto1.cantidad * productBySku.precio)
+
+                            //fijarse si existe otro prod en la lista que tenga la misma categoria, si no lo hay entonces se elimina la categoria
+                            let mismaCategoria = this.productos.find((elem) => {
+                                productBySku.categoria === elem.categoria
+                            })
+                            if(!mismaCategoria){
+                                let indiceDeCategoria = this.categorias.findIndex(elem => {elem === productBySku.categoria})
+                                this.categorias.splice(indiceDeCategoria, 1)
+                            }
+
+                            //console.log(this.productos)
+                            resolve("eliminados todos los " + sku)
+                            console.log(carrito)
+                        }
+                    }
+                    if(!producto1){
+                        reject(`No se puede eliminar el producto ${sku} porque no existe en el carrito.`)
+                        console.log(this.productos)
+                    }
+                //}, 2000)
+            })()
+        });
     }
 
 }
@@ -118,11 +163,13 @@ class ProductoEnCarrito {
     sku;       // Identificador único del producto
     nombre;    // Su nombre
     cantidad;  // Cantidad de este producto en el carrito
+    categoria; // Categoría a la que pertenece el producto
 
-    constructor(sku, nombre, cantidad) {
+    constructor(sku, nombre, cantidad, categoria) {
         this.sku = sku;
         this.nombre = nombre;
         this.cantidad = cantidad;
+        this.categoria = categoria;
     }
 
 }
@@ -142,6 +189,14 @@ function findProductBySku(sku) {
 }
 
 const carrito = new Carrito();
-carrito.agregarProducto('WE328NJ', 2);
+carrito.agregarProducto('OL883YE', 5);
 carrito.agregarProducto('WE328NJ', 3);
 console.log("Info del carrito: \n", carrito)
+carrito.eliminarProducto('WE328NJ', 6)
+.then(mensaje=>{
+    console.log(mensaje)
+    console.log(carrito.productos)
+})
+.catch(err=>{
+    console.log(err)
+})
